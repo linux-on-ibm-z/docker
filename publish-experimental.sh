@@ -93,6 +93,8 @@ get-base-image() {
         BASEIMAGE="arm64v8/openjdk:8-jdk"
     elif [[ $arch == s390x ]]; then
         BASEIMAGE="s390x/openjdk:8-jdk"
+    elif [[ $arch == ppc64le ]]; then
+        BASEIMAGE="ppc64le/openjdk:8-jdk"
     fi
 
     # The Alpine image only supports arm32v6 but should work fine on arm32v7
@@ -100,9 +102,9 @@ get-base-image() {
     if [[ $variant =~ alpine && $arch == arm ]]; then
         BASEIMAGE="arm32v6/openjdk:8-jdk-alpine"
     elif [[ $variant =~ alpine ]]; then
-        BASEIMAGE="$BASEIMAGE-alpine"
+        BASEIMAGE="${BASEIMAGE}-alpine"
     elif [[ $variant =~ slim ]]; then
-        BASEIMAGE="$BASEIMAGE-slim"
+        BASEIMAGE="${BASEIMAGE}-slim"
     fi
 
     makeDockerfile "${variant}" "${arch}"
