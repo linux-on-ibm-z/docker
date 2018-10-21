@@ -1,11 +1,14 @@
 #!/bin/bash -eu
 
-# Publish any versions of the docker image not yet pushed to jenkins/jenkins
+# Publish any versions of the docker image not yet pushed to $DOCKERHUB_ORG/$DOCKERHUB_REPO
 # Arguments:
 #   -n dry run, do not build or publish images
 #   -d debug
 
 set -o pipefail
+
+DOCKERHUB_ORG="durgadas"
+DOCKERHUB_REPO="jenkins-s390x"
 
 sort-versions() {
     if [ "$(uname)" == 'Darwin' ]; then
@@ -17,8 +20,8 @@ sort-versions() {
 
 # Try tagging with and without -f to support all versions of docker
 docker-tag() {
-    local from="jenkins/jenkins:$1"
-    local to="$2/jenkins:$3"
+    local from="$DOCKERHUB_ORG/$DOCKERHUB_REPO:$1"
+    local to="$2/$DOCKERHUB_REPO:$3"
     local out
 
     docker pull "$from"
@@ -31,7 +34,7 @@ docker-tag() {
 
 login-token() {
     # could use jq .token
-    curl -q -sSL "https://auth.docker.io/token?service=registry.docker.io&scope=repository:jenkins/jenkins:pull" | grep -o '"token":"[^"]*"' | cut -d':' -f 2 | xargs echo
+    curl -q -sSL "https://auth.docker.io/token?service=registry.docker.io&scope=repository:$DOCKERHUB_ORG/$DOCKERHUB_REPO:pull" | grep -o '"token":"[^"]*"' | cut -d':' -f 2 | xargs echo
 }
 
 is-published() {
@@ -41,7 +44,7 @@ is-published() {
         opts="-v"
     fi
     local http_code;
-    http_code=$(curl $opts -q -fsL -o /dev/null -w "%{http_code}" -H "Accept: application/vnd.docker.distribution.manifest.v2+json" -H "Authorization: Bearer $TOKEN" "https://index.docker.io/v2/jenkins/jenkins/manifests/$tag")
+    http_code=$(curl $opts -q -fsL -o /dev/null -w "%{http_code}" -H "Accept: application/vnd.docker.distribution.manifest.v2+json" -H "Authorization: Bearer $TOKEN" "https://index.docker.io/v2/$DOCKERHUB_ORG/$DOCKERHUB_REPO/manifests/$tag")
     if [ "$http_code" -eq "404" ]; then
         false
     elif [ "$http_code" -eq "200" ]; then
@@ -58,7 +61,7 @@ get-manifest() {
     if [ "$debug" = true ]; then
         opts="-v"
     fi
-    curl $opts -q -fsSL -H "Accept: application/vnd.docker.distribution.manifest.v2+json" -H "Authorization: Bearer $TOKEN" "https://index.docker.io/v2/jenkins/jenkins/manifests/$tag"
+    curl $opts -q -fsSL -H "Accept: application/vnd.docker.distribution.manifest.v2+json" -H "Authorization: Bearer $TOKEN" "https://index.docker.io/v2/$DOCKERHUB_ORG/$DOCKERHUB_REPO/manifests/$tag"
 }
 
 get-digest() {
@@ -91,14 +94,12 @@ publish() {
     docker build --file "Dockerfile$variant" \
                  --build-arg "JENKINS_VERSION=$version" \
                  --build-arg "JENKINS_SHA=$sha" \
-                 --tag "jenkins/jenkins:${tag}" \
-                 --tag "jenkinsci/jenkins:${tag}" \
+                 --tag "$DOCKERHUB_ORG/$DOCKERHUB_REPO:${tag}" \
                  "${build_opts[@]+"${build_opts[@]}"}" .
 
     # " line to fix syntax highlightning
     if [ ! "$dry_run" = true ]; then
-        docker push "jenkins/jenkins:${tag}"
-        docker push "jenkinsci/jenkins:${tag}"        
+        docker push "$DOCKERHUB_ORG/$DOCKERHUB_REPO:${tag}"
     fi
 }
 
@@ -129,14 +130,12 @@ tag-and-push() {
         echo "Images ${source} [$digest_source] and ${target} [$digest_target] are already the same, not updating tags"
     else
         echo "Creating tag ${target} pointing to ${source}"
-        docker-tag "${source}" "jenkins" "${target}"
-        docker-tag "${source}" "jenkinsci" "${target}"
+        docker-tag "${source}" "$DOCKERHUB_ORG" "${target}"
         if [ ! "$dry_run" = true ]; then
-            echo "Pushing jenkins/jenkins:${target}"
-            docker push "jenkins/jenkins:${target}"
-            docker push "jenkinsci/jenkins:${target}"
+            echo "Pushing $DOCKERHUB_ORG/$DOCKERHUB_REPO:${target}"
+            docker push "$DOCKERHUB_ORG/$DOCKERHUB_REPO:${target}"
         else
-            echo "Would push jenkins/jenkins:${target}"
+            echo "Would push $DOCKERHUB_ORG/$DOCKERHUB_REPO:${target}"
         fi
     fi
 }
