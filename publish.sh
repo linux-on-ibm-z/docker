@@ -10,13 +10,13 @@ set -o pipefail
 DOCKERHUB_ORG="jenkins4eval"
 DOCKERHUB_REPO="jenkins-s390x"
 
+sort-versions() {
     if [ "$(uname)" == 'Darwin' ]; then
         gsort --version-sort
     else
         sort --version-sort
     fi
 }
-
 # Try tagging with and without -f to support all versions of docker
 docker-tag() {
     local from="$DOCKERHUB_ORG/$DOCKERHUB_REPO:$1"
