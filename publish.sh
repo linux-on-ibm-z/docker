@@ -17,6 +17,7 @@ sort-versions() {
         sort --version-sort
     fi
 }
+
 # Try tagging with and without -f to support all versions of docker
 docker-tag() {
     local from="$DOCKERHUB_ORG/$DOCKERHUB_REPO:$1"
@@ -135,6 +136,8 @@ tag-and-push() {
             docker push "$DOCKERHUB_ORG/$DOCKERHUB_REPO:${target}"
         else
             echo "Would push $DOCKERHUB_ORG/$DOCKERHUB_REPO:${target}"
+        fi
+    fi
 }
 
 publish-latest() {
