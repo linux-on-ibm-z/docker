@@ -10,7 +10,6 @@ set -o pipefail
 DOCKERHUB_ORG="jenkins4eval"
 DOCKERHUB_REPO="jenkins-s390x"
 
-sort-versions() {
     if [ "$(uname)" == 'Darwin' ]; then
         gsort --version-sort
     else
@@ -136,8 +135,6 @@ tag-and-push() {
             docker push "$DOCKERHUB_ORG/$DOCKERHUB_REPO:${target}"
         else
             echo "Would push $DOCKERHUB_ORG/$DOCKERHUB_REPO:${target}"
-        fi
-    fi
 }
 
 publish-latest() {
